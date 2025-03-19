@@ -1,8 +1,9 @@
-from fastapi import FastAPI, Path, Query
+from fastapi import FastAPI, Path, Query, Request, HTTPException, Depends
 from fastapi.responses import HTMLResponse, JSONResponse
 from pydantic import BaseModel, Field
 from typing import Optional
-from user_jwt import createToken
+from user_jwt import createToken, validateToken
+from fastapi.security import HTTPBearer
 
 app = FastAPI(
     title='Crud FastApi',
@@ -13,6 +14,15 @@ app = FastAPI(
 class User(BaseModel):
     email: str
     password: str
+
+class BearerJWT(HTTPBearer):
+    async def __call__(self, request: Request):
+        auth = await super().__call__(request)
+        data = validateToken(auth.credentials)
+        if data['email'] != 'string':
+            raise HTTPException(status_code=403, detail='Credenciales Incorrectas')
+
+
 
 class Movie(BaseModel):
     id: Optional[int] = None
@@ -27,13 +37,17 @@ movies = []
 
 @app.post('/login', tags=['authentication'])
 def login(user: User):
+    if user.email == 'string' and user.password == 'string':
+        token: str = createToken(user.model_dump())
+    print(token)
     return user
+   
 
 @app.get('/', tags=['Inicio'])
 def read_root():
     return HTMLResponse('<h2>Hola que tal</h2>')
 
-@app.get('/movies', tags=['Movies'])
+@app.get('/movies', tags=['Movies'], dependencies=[Depends(BearerJWT())])
 def get_movie():
     return JSONResponse(content=movies)
 
