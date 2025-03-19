@@ -2,12 +2,17 @@ from fastapi import FastAPI, Path, Query
 from fastapi.responses import HTMLResponse, JSONResponse
 from pydantic import BaseModel, Field
 from typing import Optional
+from user_jwt import createToken
 
 app = FastAPI(
     title='Crud FastApi',
     description='Una API Sencilla',
     version='0.0.1',
 )
+
+class User(BaseModel):
+    email: str
+    password: str
 
 class Movie(BaseModel):
     id: Optional[int] = None
@@ -19,6 +24,10 @@ class Movie(BaseModel):
     
 
 movies = []
+
+@app.post('/login', tags=['authentication'])
+def login(user: User):
+    return user
 
 @app.get('/', tags=['Inicio'])
 def read_root():
